@@ -59,6 +59,9 @@ python -m venv .venv
 ```bash
 # 默认预设（ROC动量，tech_growth配置）
 .venv\Scripts\python.exe main_backtest.py
+
+# 指定策略和预设
+.venv\Scripts\python.exe main_backtest.py --strategy roc_momentum --preset sharp_defense
 ```
 
 ### 3. 运行测试
@@ -66,6 +69,9 @@ python -m venv .venv
 ```bash
 # 默认：unit + contract（秒级完成）
 .venv\Scripts\python.exe tests/run_all_tests.py
+
+# 全量（含网络测试）
+.venv\Scripts\python.exe tests/run_all_tests.py --all
 ```
 
 ## 目录结构
@@ -129,17 +135,17 @@ quantforge/
 
 ## 回测表现
 
-> **ROC动量轮动 `tech_growth` 预设** · 回测区间 2018-01-01 ~ 2026-05-28 · 基准 创业板指(399006) · git `b404c22`
+> **ROC动量轮动 `tech_growth` 预设** · 回测区间 2018-01-01 ~ 2026-05-31 · 基准 创业板指(399006) · 33只科技/成长ETF
 
 ![净值曲线对比](./backtest_result.png)
 
 | 指标 | 策略 | 基准 | 超额 |
 |------|------|------|------|
-| 总收益率 | **276.15%** | 148.68% | +127.47pp |
-| 年化收益率 | **22.81%** | 15.17% | +7.64pp |
+| 总收益率 | **288.61%** | 148.50% | +140.11pp |
+| 年化收益率 | **23.40%** | 15.14% | +8.26pp |
 | 最大回撤 | 13.05% | — | — |
-| Sharpe比率 | 1.31 | — | — |
-| Sortino比率 | 0.93 | — | — |
+| Sharpe比率 | 1.33 | — | — |
+| Sortino比率 | 0.96 | — | — |
 | 交易次数 | 48 | — | — |
 | 胜率 | 70.83% | — | — |
 | 盈亏比 | 6.06 | — | — |
@@ -170,7 +176,7 @@ quantforge/
 - **核心层重保护**：`core/` 测试遵循"失败模式优先"原则，Mock外部依赖测试内部逻辑
 
 ```bash
-.venv\Scripts\python.exe tests/run_all_tests.py               # 默认 unit+contract
+.venv\Scripts\python.exe tests/run_all_tests.py      # 默认 unit+contract
 .venv\Scripts\python.exe tests/run_all_tests.py --all          # 全量
 .venv\Scripts\python.exe tests/run_all_tests.py --layers unit  # 指定层
 ```
@@ -191,14 +197,3 @@ quantforge/
 ## 开源协议
 
 MIT License — 详见 [LICENSE](./LICENSE)。
-
-## 免责声明
-
-**本仓库为代码展示镜像，与实际运行版本有以下差异：**
-
-- **密钥与配置**：`tokens/` 下仅含模板文件（`_templates/`），无真实密钥。按 [1.03_跨设备开发运维指南.md](指导文档/1.03_跨设备开发运维指南.md) 配置后才能运行实盘功能。
-- **持仓与日志**：`position/`、`data/`、`logs/`、`results/` 仅保留目录结构（`.gitkeep`），无真实数据。
-- **运维脚本脱敏**：`remote_cmd.py` 持仓数据已替换为占位示例，目标日期设为 2099 年。`git_pull.py` 函数名已通用化（`pull_from_remote`）。
-- **代码同步**：如直接 clone 运行，回测功能可正常工作（使用新浪财经公开数据源）。实盘监控需自行配置 `tokens/` 和 Windows 计划任务。
-
-本项目仅为技术展示与学习交流之用，不构成任何投资建议。
