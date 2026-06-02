@@ -1,0 +1,61 @@
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# === 敏感信息（真实密钥不入版本控制）===
+.env
+tokens/小熊同学token.py
+tokens/wechat_webhook.py
+tokens/email_config.py
+!tokens/_templates/
+
+# === 虚拟环境 ===
+.venv/
+
+# === 数据与缓存（目录结构保留，内容排除）===
+data/*
+!data/.gitkeep
+
+# === 日志（目录结构保留，内容排除）===
+logs/*
+!logs/.gitkeep
+
+# === 回测产物（目录结构保留，内容排除）===
+results/*
+!results/.gitkeep
+*.png
+!backtest_result.png
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+.trae/
+
+# === 临时文件 ===
+临时文件/
+debug.log
+test.txt
+test.py
+test.bat
+
+# === 持仓状态（目录结构保留，示例模板除外）===
+position/*.json
+!position/position.json.example
+
+# === MPM 索引数据 ===
+.mpm-data/
+dev-log.md
+dev-log-archive/
+
+# === 内部文件（AI Prompt、工具生成，不对外开源）===
+SYSTEM_PROMPT.md
+_MPM_PROJECT_RULES.md
+
+# === 历史存档（含个人路径，不对外开源）===
+指导文档/archive/

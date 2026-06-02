@@ -1,0 +1,1 @@
+from quantforge.strategies.roc_momentum import ROCStrategy

@@ -1,0 +1,3 @@
+from quantforge.data_sources.autostock_feed import AutoStockFeed
+from quantforge.data_sources.sina_feed import SinaFinanceFeed
+from quantforge.data_sources.web_scraper_feed import WebScraperFeed
