@@ -44,7 +44,7 @@
 
 ```bash
 # 克隆项目
-git clone <your-repo-url>
+git clone https://github.com/KwokCecil/quantforge.git
 cd quantforge
 
 # 创建虚拟环境
@@ -57,21 +57,15 @@ python -m venv .venv
 ### 2. 运行回测
 
 ```bash
-# 默认预设（ROC动量，all_weather配置）
+# 默认预设（ROC动量，tech_growth配置）
 .venv\Scripts\python.exe main_backtest.py
-
-# 指定策略和预设
-.venv\Scripts\python.exe main_backtest.py --strategy roc_momentum --preset sharp_defense
 ```
 
 ### 3. 运行测试
 
 ```bash
 # 默认：unit + contract（秒级完成）
-python tests/run_all_tests.py
-
-# 全量（含网络测试）
-python tests/run_all_tests.py --all
+.venv\Scripts\python.exe tests/run_all_tests.py
 ```
 
 ## 目录结构
@@ -176,9 +170,9 @@ quantforge/
 - **核心层重保护**：`core/` 测试遵循"失败模式优先"原则，Mock外部依赖测试内部逻辑
 
 ```bash
-python tests/run_all_tests.py               # 默认 unit+contract
-python tests/run_all_tests.py --all          # 全量
-python tests/run_all_tests.py --layers unit  # 指定层
+.venv\Scripts\python.exe tests/run_all_tests.py               # 默认 unit+contract
+.venv\Scripts\python.exe tests/run_all_tests.py --all          # 全量
+.venv\Scripts\python.exe tests/run_all_tests.py --layers unit  # 指定层
 ```
 
 ## 技术栈
