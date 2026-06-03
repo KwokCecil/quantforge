@@ -35,13 +35,23 @@ class StopLossChecker:
 
             current_price = float(df.iloc[-1]['close'])
 
-            if pos.get('high_watermark') and pos['high_watermark'] > 0:
-                drawdown = (pos['high_watermark'] - current_price) / pos['high_watermark']
+            hwm = pos.get('high_watermark', 0.0)
+            entry_date = pos.get('entry_date', '2018-01-01')
+            if 'date' in df.columns:
+                mask = df[df['date'] > entry_date]
+            else:
+                mask = df
+            highs = mask['high'].tail(22)
+            if len(highs) > 0:
+                hwm = max(hwm, float(highs.max()))
+
+            if hwm > 0:
+                drawdown = (hwm - current_price) / hwm
                 if drawdown >= self.high_watermark_stop_edge:
                     targets.append(TargetPosition(
                         code=code,
                         target_weight=0.0,
-                        reason=f"高水位止损: {pos['high_watermark']:.2f} -> {current_price:.2f} 回落{drawdown:.1%}",
+                        reason=f"高水位止损: {hwm:.2f} -> {current_price:.2f} 回落{drawdown:.1%}",
                     ))
                     continue
 

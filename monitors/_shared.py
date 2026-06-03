@@ -121,9 +121,19 @@ def _pnl_line(code, positions, response):
     return f"  持仓{shares}股 成本{avg_cost:.3f} 现价{price:.3f} 盈亏{pnl:+.0f}元 {pnl_pct:+.1f}%"
 
 
-def _stop_loss_line(code, pos, price, high_watermark_stop_edge, cut_loss_edge):
+def _stop_loss_line(code, pos, price, bar, high_watermark_stop_edge, cut_loss_edge):
     hwm = pos.get('high_watermark', 0)
     avg_cost = pos.get('avg_cost', 0)
+
+    if bar is not None and not bar.empty:
+        entry_date = pos.get('entry_date', '2018-01-01')
+        if 'date' in bar.columns:
+            mask = bar[bar['date'] > entry_date]
+        else:
+            mask = bar
+        highs = mask['high'].tail(22)
+        if len(highs) > 0:
+            hwm = max(hwm, float(highs.max()))
 
     if hwm and hwm > 0:
         drawdown = (hwm - price) / hwm
@@ -262,7 +272,7 @@ def report_roc_signals(notifier, decisions, name, hour, minute, code_names,
             price = float(bar.iloc[-1]['close'])
             if price <= 0:
                 continue
-            label, reason = _stop_loss_line(code, pos, price,
+            label, reason = _stop_loss_line(code, pos, price, bar,
                                             high_watermark_stop_edge, cut_loss_edge)
             if label:
                 pnl = _pnl_line(code, positions, response)

@@ -48,7 +48,7 @@ class BacktestExecutor(Executor):
         self.rebalance = rebalance
         self._config_stop_small = stop_small_trade
         self._config_small_limit = skip_small_trade_limit
-        self.positions: dict[str, dict] = {}   # {code: {'shares': int, 'avg_cost': float, 'high_watermark': float}}
+        self.positions: dict[str, dict] = {}   # {code: {'shares': int, 'avg_cost': float, 'high_watermark': float, 'entry_date': str}}
         self.trade_log: list[dict] = []
         self.net_values: list[dict] = []
         self.total_commission = 0.0
@@ -189,12 +189,14 @@ class BacktestExecutor(Executor):
                 'shares': total_shares,
                 'avg_cost': new_avg,
                 'high_watermark': max(old['high_watermark'], actual_price),
+                'entry_date': old.get('entry_date', trade_date),
             }
         else:
             self.positions[code] = {
                 'shares': shares,
                 'avg_cost': actual_price,
                 'high_watermark': actual_price,
+                'entry_date': trade_date,
             }
 
         self.trade_log.append({
@@ -244,11 +246,20 @@ class BacktestExecutor(Executor):
         })
 
     def _update_high_watermarks(self, data: DataResponse):
-        """每日更新持仓的高水位线，用于高水位止损判断。"""
+        """每日更新持仓的高水位线。
+        取 position 中存储的 hwm 与 entry_date 之后近22日最高价比较，确保跳过几日运行也不丢失高水位。"""
         for code, pos in self.positions.items():
             if code in data.bar_data and not data.bar_data[code].empty:
-                current_price = float(data.bar_data[code].iloc[-1]['close'])
-                pos['high_watermark'] = max(pos['high_watermark'], current_price)
+                df = data.bar_data[code]
+                entry_date = pos.get('entry_date', '2018-01-01')
+                if 'date' in df.columns:
+                    mask = df[df['date'] > entry_date]
+                else:
+                    mask = df
+                highs = mask['high'].tail(22)
+                if len(highs) > 0:
+                    kline_max = float(highs.max())
+                    pos['high_watermark'] = max(pos.get('high_watermark', 0.0), kline_max)
 
     def _compute_total_value(self, data: DataResponse) -> float:
         """计算总资产 = 现金 + 持仓市值（按最新收盘价计算）。"""
@@ -378,9 +389,11 @@ class LiveExecutor(Executor):
                 if current_shares > 0:
                     new_avg = (current_pos['shares'] * current_pos['avg_cost'] + shares * actual_price) / (current_shares + shares)
                     new_hwm = max(current_pos.get('high_watermark', actual_price), actual_price)
+                    entry_date = current_pos.get('entry_date', today)
                 else:
                     new_avg = actual_price
                     new_hwm = actual_price
+                    entry_date = today
 
                 messages.append(
                     f"买入 {self._label(code)}\n"
@@ -393,6 +406,7 @@ class LiveExecutor(Executor):
                     'shares': current_shares + shares,
                     'avg_cost': new_avg,
                     'high_watermark': new_hwm,
+                    'entry_date': entry_date,
                 }
                 available_cash -= total_cost
 
@@ -410,8 +424,6 @@ class LiveExecutor(Executor):
             content += "\n\n" + summary
             self.notifier.notify("交易操作", content)
 
-        # 更新 prev_close 为当日收盘价，供次日计算当日盈亏
-        self._update_prev_close(data)
         if not self.dry_run:
             self._save_positions()
 
@@ -438,7 +450,11 @@ class LiveExecutor(Executor):
     def _load_positions(self) -> dict:
         if os.path.exists(self.position_file):
             with open(self.position_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                data = json.load(f)
+            for code in list(data.keys()):
+                if isinstance(data[code], dict) and 'prev_close' in data[code]:
+                    del data[code]['prev_close']
+            return data
         return {'free_capital': self.initial_capital, 'last_update': ''}
 
     def _save_positions(self):
@@ -471,8 +487,10 @@ class LiveExecutor(Executor):
             total_holding_value += value
             total_pnl += pnl
 
-            # 当日盈亏：基于昨日收盘价
-            prev_close = pos.get('prev_close', 0)
+            # 当日盈亏：从K线数据取昨日收盘价（不依赖position.json的prev_close）
+            prev_close = 0.0
+            if code in data.bar_data and len(data.bar_data[code]) >= 2:
+                prev_close = float(data.bar_data[code].iloc[-2]['close'])
             if prev_close > 0:
                 daily_pnl = shares * (price - prev_close)
                 daily_pnl_pct = (price / prev_close - 1) * 100
@@ -500,10 +518,3 @@ class LiveExecutor(Executor):
         lines.append(f"当日盈亏 {total_daily_pnl:+.0f}")
 
         return "\n".join(lines)
-
-    def _update_prev_close(self, data: DataResponse):
-        """更新所有持仓的 prev_close 为当日收盘价，供次日计算当日盈亏"""
-        for code in self._holding_codes():
-            price = self._get_price(code, data)
-            if price > 0:
-                self.positions[code]['prev_close'] = price

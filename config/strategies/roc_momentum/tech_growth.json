@@ -11,7 +11,7 @@
   ],
   "data_type": "daily_k",
   "start_date": "2018-01-01",
-  "end_date": null,
+  "end_date": "2026-05-31",
   "benchmark_code": "399006",
   "buy_roc_edge": 20.0,
   "roc_n": 22,
